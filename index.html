@@ -573,7 +573,7 @@ function initializeForm() {
 
   // 2. Register Service Worker for offline capability
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js')
+    navigator.serviceWorker.register('./sw.js')
       .then(registration => {
         console.log('ServiceWorker registered with scope:', registration.scope);
         registration.update();
