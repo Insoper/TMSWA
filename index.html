@@ -494,7 +494,6 @@
 
   <button id="btnSelesai" onclick="selesaiSession()" disabled>✅ Selesai</button>
   <button id="btnSummary" onclick="hitungProduksi()" disabled>📊 Summary</button>
-  <button id="btnExportPDF" onclick="exportPDF()" disabled>🧾 Export ke PDF</button>
   <button id="btnExportExcel" onclick="exportExcel()" disabled>📄 Export ke Excel</button>
   <button id="btnExportSheets" onclick="exportToGoogleSheets()" disabled>📤 Export ke Google Sheets</button>
   <button id="btnBackToInput" class="nav-button" onclick="showInputAlatView()" disabled>Kembali ke Input Awal</button>
@@ -1135,49 +1134,226 @@ function hitungProduksi() {
   
   document.getElementById("resume").innerHTML = resumeHTML;
 
-  // Buat grafik pie
-  const pieChartCanvas = document.getElementById("pieChart");
-  window.pieChart = new Chart(pieChartCanvas, {
-    type: 'pie',
-    data: {
-      labels: ["Primary Work", "Secondary Work"],
-      datasets: [{
-        data: [totalPrimary, totalSecondary],
-        backgroundColor: ["#007bff", "#ffc107"]
-      }]
+   try {
+    const pieChartCanvas = document.getElementById("pieChart");
+    if (window.pieChart) {
+      window.pieChart.destroy();
     }
-  });
-  pieChartCanvas.chart = window.pieChart;
-
-  // Buat grafik bar
-  const primaryItems = [...new Set(primary.map(p => p.item))];
-  const avgDurasi = primaryItems.map(item => {
-    const steps = primary.filter(p => p.item === item);
-    return steps.reduce((a,b)=>a+b.durasi,0)/steps.length;
-  });
-
-  const barChartCanvas = document.getElementById("barChart");
-  window.barChart = new Chart(barChartCanvas, {
-    type: 'bar',
-    data: {
-      labels: primaryItems,
-      datasets: [{
-        label: "Rata-rata Durasi (detik)",
-        data: avgDurasi,
-        backgroundColor: "#28a745"
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
+    window.pieChart = new Chart(pieChartCanvas, {
+      type: 'pie',
+      data: {
+        labels: ["Primary Work", "Secondary Work"],
+        datasets: [{
+          data: [totalPrimary, totalSecondary],
+          backgroundColor: ["#007bff", "#ffc107"]
+        }]
       }
+    });
+    pieChartCanvas.chart = window.pieChart;
+  } catch (e) {
+    console.error("Error creating pie chart:", e);
+  }
+
+  // Buat grafik bar dengan error handling
+  try {
+    const primaryItems = [...new Set(primary.map(p => p.item))];
+    const avgDurasi = primaryItems.map(item => {
+      const steps = primary.filter(p => p.item === item);
+      return steps.reduce((a,b)=>a+b.durasi,0)/steps.length;
+    });
+
+    const barChartCanvas = document.getElementById("barChart");
+    if (window.barChart) {
+      window.barChart.destroy();
     }
-  });
-  barChartCanvas.chart = window.barChart;
+    window.barChart = new Chart(barChartCanvas, {
+      type: 'bar',
+      data: {
+        labels: primaryItems,
+        datasets: [{
+          label: "Rata-rata Durasi (detik)",
+          data: avgDurasi,
+          backgroundColor: "#28a745"
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+    barChartCanvas.chart = window.barChart;
+  } catch (e) {
+    console.error("Error creating bar chart:", e);
+  }
 }
 
-// Fungsi export tetap sama
-// ...
+async function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  const margin = 50;
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  let y = margin;
+
+  pdf.setFontSize(16);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("Laporan Produktivitas Excavator", pageWidth / 2, y, { align: "center" });
+  y += 24;
+
+  const output = document.getElementById("output").innerText.trim().split("\n");
+  pdf.setFontSize(11);
+  pdf.setFont("helvetica", "normal");
+  output.forEach(line => {
+    pdf.text(line, margin, y);
+    y += 14;
+  });
+
+  y += 10;
+
+  const pieCanvas = document.getElementById("pieChart");
+  const barCanvas = document.getElementById("barChart");
+
+  const chartContainer = document.createElement('div');
+  chartContainer.style.position = "fixed";
+  chartContainer.style.top = "-9999px";
+  chartContainer.style.left = "-9999px";
+  chartContainer.style.width = "800px";
+  chartContainer.style.padding = "20px";
+  chartContainer.style.background = "white";
+  chartContainer.style.display = "flex";
+  chartContainer.style.flexWrap = "wrap";
+  chartContainer.style.justifyContent = "space-between";
+  chartContainer.style.gap = "20px";
+  chartContainer.style.zIndex = "-1";
+
+  const pieImgEl = document.createElement("img");
+  pieImgEl.src = pieCanvas.toDataURL("image/png");
+  pieImgEl.style.width = "48%";
+
+  const barImgEl = document.createElement("img");
+  barImgEl.src = barCanvas.toDataURL("image/png");
+  barImgEl.style.width = "48%";
+
+  chartContainer.appendChild(pieImgEl);
+  chartContainer.appendChild(barImgEl);
+  document.body.appendChild(chartContainer);
+
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
+  const canvasChart = await html2canvas(chartContainer, {
+    scale: 2,
+    scrollY: 0,
+    windowWidth: chartContainer.scrollWidth,
+    useCORS: true
+  });
+
+  const chartImg = canvasChart.toDataURL("image/png");
+  const chartImgHeight = (canvasChart.height * (pageWidth - 2 * margin)) / canvasChart.width;
+
+  if (y + chartImgHeight > pageHeight - margin) {
+    pdf.addPage();
+    y = margin;
+  }
+
+  pdf.addImage(chartImg, "PNG", margin, y, pageWidth - 2 * margin, chartImgHeight);
+  y += chartImgHeight + 20;
+
+  chartContainer.remove();
+
+  // Add suggestions
+  const resumeHTML = document.getElementById("resume").innerHTML;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(resumeHTML, "text/html");
+  const lis = doc.querySelectorAll("ul li");
+
+  if (lis.length > 0) {
+    if (y + 20 > pageHeight - margin) {
+      pdf.addPage();
+      y = margin;
+    }
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text("Saran:", margin, y);
+    y += 18;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+
+    lis.forEach(li => {
+      let bulletText = li.textContent.trim();
+      bulletText = bulletText.replace(/[^a-zA-Z0-9\s.,%<>=:/()-]/g, "");
+
+      const safeWidth = pageWidth - 2 * margin - 10;
+      const wrapped = pdf.splitTextToSize("• " + bulletText, safeWidth);
+
+      wrapped.forEach(line => {
+        if (y > pageHeight - margin - 12) {
+          pdf.addPage();
+          y = margin;
+        }
+        pdf.text(line, margin + 10, y);
+        y += 12;
+      });
+    });
+  }
+
+  // Add table
+  const table = document.querySelector("#resume table");
+  if (table) {
+    pdf.addPage();
+    pdf.autoTable({
+      startY: margin,
+      html: table,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [0, 123, 255] }
+    });
+  }
+
+  pdf.save("TMSWA_Report.pdf");
+}
+
+function exportExcel() {
+  const table = document.querySelector("#resume table");
+  if (!table) return alert("Tidak ada data untuk diekspor.");
+
+  const output = document.getElementById("output").innerText.trim().split("\n");
+
+  // Ambil data ringkasan
+  const ringkasan = output.map(line => {
+    const idx = line.indexOf(":");
+    if (idx === -1) return [line.trim(), ""];
+    const key = line.substring(0, idx).trim();
+    const value = line.substring(idx + 1).trim();
+    return [key, value];
+  });
+
+  // Ambil data langkah operasi
+  const rows = Array.from(table.rows).map((row, i) =>
+    Array.from(row.cells).map((cell, j) => {
+      const text = cell.innerText.trim().replace(",", ".");
+      return i === 0 || isNaN(text) ? cell.innerText : parseFloat(text);
+    })
+  );
+
+  // Gabungkan semua data
+  const allData = [
+    ["RINGKASAN PRODUKTIVITAS", ""],
+    ...ringkasan,
+    [],
+    ["DETAIL LANGKAH OPERASI"],
+    ...rows
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(allData);
+  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+  XLSX.writeFile(wb, "TMSWA_Report.xlsx");
+}
 </script>
   
 <script src="./chart.js"></script>
