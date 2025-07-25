@@ -372,7 +372,25 @@
     }
   </style>
 </head>
-<body onload="initializeForm()">
+<body>
+<script>
+// Pindahkan initializeForm ke atas atau gunakan event listener
+document.addEventListener('DOMContentLoaded', function() {
+  // 1. Set initial view
+  document.getElementById('loginView').style.display = 'block';
+  document.getElementById('inputAlatView').style.display = 'none';
+  document.getElementById('operationView').style.display = 'none';
+  
+  // 2. Setup form listeners
+  document.getElementById("typeAlat").addEventListener("change", function() {
+    // ... kode yang ada ...
+  });
+  
+  // 3. Setup login
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+});
+</script>
 
 <!-- View 1: Login -->
 <div id="loginView" class="view-container">
