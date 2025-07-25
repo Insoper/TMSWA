@@ -1,7 +1,7 @@
 {
   "name": "Wheel Loader TMS",
   "short_name": "LoaderTMS",
-  "start_url": "/index.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#007bff",
   "theme_color": "#007bff",
