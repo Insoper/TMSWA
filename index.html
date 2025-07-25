@@ -1127,7 +1127,6 @@ function hitungProduksi() {
   `;
   
   document.getElementById("output").innerHTML = outputHTML;
-
   document.getElementById("btnExportPDF").disabled = false;
   document.getElementById("btnExportExcel").disabled = false;
   
@@ -1148,101 +1147,97 @@ function hitungProduksi() {
   
   document.getElementById("resume").innerHTML = resumeHTML;
 
-  // Buat grafik pie dengan error handling
-  try {
-    const pieCtx = document.getElementById('pieChart').getContext('2d');
-    
-    // Hancurkan chart sebelumnya jika ada
-    if (window.pieChart) {
-      window.pieChart.destroy();
-    }
-    
-    window.pieChart = new Chart(pieCtx, {
-      type: 'pie',
-      data: {
-        labels: ['Primary Work', 'Secondary Work'],
-        datasets: [{
-          data: [totalPrimary, totalSecondary],
-          backgroundColor: ['#28a745', '#17a2b8'],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top'
-          },
-          title: {
-            display: true,
-            text: 'Distribusi Waktu Kerja'
-          }
-        }
-      }
-    });
-  } catch (e) {
-    console.error('Error membuat pie chart:', e);
+// Buat grafik pie dengan error handling
+try {
+  const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+  if (pieChart) {
+    pieChart.destroy();
   }
 
-  // Buat grafik bar dengan error handling
-  try {
-    // Kelompokkan data primary work
-    const primaryGroups = {};
-    primary.forEach(item => {
-      if (!primaryGroups[item.item]) {
-        primaryGroups[item.item] = [];
-      }
-      primaryGroups[item.item].push(item.durasi);
-    });
-
-    // Hitung rata-rata
-    const labels = Object.keys(primaryGroups);
-    const averages = labels.map(label => {
-      const values = primaryGroups[label];
-      return values.reduce((a, b) => a + b, 0) / values.length;
-    });
-
-    const barCtx = document.getElementById('barChart').getContext('2d');
-    
-    // Hancurkan chart sebelumnya jika ada
-    if (window.barChart) {
-      window.barChart.destroy();
-    }
-    
-    window.barChart = new Chart(barCtx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Rata-rata Durasi (detik)',
-          data: averages,
-          backgroundColor: '#007bff',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Detik'
-            }
-          }
+  pieChart = new Chart(pieCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Primary Work', 'Secondary Work'],
+      datasets: [{
+        data: [totalPrimary, totalSecondary],
+        backgroundColor: ['#28a745', '#17a2b8'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top'
         },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Rata-rata Durasi Primary Work'
-          }
+        title: {
+          display: true,
+          text: 'Distribusi Waktu Kerja'
         }
       }
-    });
-  } catch (e) {
-    console.error('Error membuat bar chart:', e);
-  }
+    }
+  });
+} catch (e) {
+  console.error('Error membuat pie chart:', e);
 }
+
+// Buat grafik bar dengan error handling
+try {
+  const primaryGroups = {};
+  primary.forEach(item => {
+    if (!primaryGroups[item.item]) {
+      primaryGroups[item.item] = [];
+    }
+    primaryGroups[item.item].push(item.durasi);
+  });
+
+  const labels = Object.keys(primaryGroups);
+  const averages = labels.map(label => {
+    const values = primaryGroups[label];
+    return values.reduce((a, b) => a + b, 0) / values.length;
+  });
+
+  const barCtx = document.getElementById('barChart').getContext('2d');
+
+  if (barChart) {
+    barChart.destroy();
+  }
+
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Rata-rata Durasi (detik)',
+        data: averages,
+        backgroundColor: '#007bff',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Detik'
+          }
+        }
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: 'Rata-rata Durasi Primary Work'
+        }
+      }
+    }
+  });
+} catch (e) {
+  console.error('Error membuat bar chart:', e);
+}
+
 
 async function exportPDF() {
   const { jsPDF } = window.jspdf;
