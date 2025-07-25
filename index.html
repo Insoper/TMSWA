@@ -7,6 +7,7 @@
   <title>Wheel Loader TMS</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon-192.png" type="image/png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -147,6 +148,11 @@
       gap: 15px;
       margin-top: 15px;
     }
+
+  .charts canvas {
+  width: 100% !important;
+  height: auto !important;
+   }
     
     .chart-container {
       width: 100%;
@@ -1124,7 +1130,7 @@ function hitungProduksi() {
 
   document.getElementById("btnExportPDF").disabled = false;
   document.getElementById("btnExportExcel").disabled = false;
-    
+  
   // Tampilkan resume langkah
   let resumeHTML = `
     <h3>Resume Pengoperasian:</h3>
@@ -1142,57 +1148,99 @@ function hitungProduksi() {
   
   document.getElementById("resume").innerHTML = resumeHTML;
 
-   try {
-    const pieChartCanvas = document.getElementById("pieChart");
+  // Buat grafik pie dengan error handling
+  try {
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    
+    // Hancurkan chart sebelumnya jika ada
     if (window.pieChart) {
       window.pieChart.destroy();
     }
-    window.pieChart = new Chart(pieChartCanvas, {
+    
+    window.pieChart = new Chart(pieCtx, {
       type: 'pie',
       data: {
-        labels: ["Primary Work", "Secondary Work"],
+        labels: ['Primary Work', 'Secondary Work'],
         datasets: [{
           data: [totalPrimary, totalSecondary],
-          backgroundColor: ["#007bff", "#ffc107"]
+          backgroundColor: ['#28a745', '#17a2b8'],
+          borderWidth: 1
         }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: 'Distribusi Waktu Kerja'
+          }
+        }
       }
     });
-    pieChartCanvas.chart = window.pieChart;
   } catch (e) {
-    console.error("Error creating pie chart:", e);
+    console.error('Error membuat pie chart:', e);
   }
 
   // Buat grafik bar dengan error handling
   try {
-    const primaryItems = [...new Set(primary.map(p => p.item))];
-    const avgDurasi = primaryItems.map(item => {
-      const steps = primary.filter(p => p.item === item);
-      return steps.reduce((a,b)=>a+b.durasi,0)/steps.length;
+    // Kelompokkan data primary work
+    const primaryGroups = {};
+    primary.forEach(item => {
+      if (!primaryGroups[item.item]) {
+        primaryGroups[item.item] = [];
+      }
+      primaryGroups[item.item].push(item.durasi);
     });
 
-    const barChartCanvas = document.getElementById("barChart");
+    // Hitung rata-rata
+    const labels = Object.keys(primaryGroups);
+    const averages = labels.map(label => {
+      const values = primaryGroups[label];
+      return values.reduce((a, b) => a + b, 0) / values.length;
+    });
+
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    
+    // Hancurkan chart sebelumnya jika ada
     if (window.barChart) {
       window.barChart.destroy();
     }
-    window.barChart = new Chart(barChartCanvas, {
+    
+    window.barChart = new Chart(barCtx, {
       type: 'bar',
       data: {
-        labels: primaryItems,
+        labels: labels,
         datasets: [{
-          label: "Rata-rata Durasi (detik)",
-          data: avgDurasi,
-          backgroundColor: "#28a745"
+          label: 'Rata-rata Durasi (detik)',
+          data: averages,
+          backgroundColor: '#007bff',
+          borderWidth: 1
         }]
       },
       options: {
+        responsive: true,
         scales: {
-          y: { beginAtZero: true }
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Detik'
+            }
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'Rata-rata Durasi Primary Work'
+          }
         }
       }
     });
-    barChartCanvas.chart = window.barChart;
   } catch (e) {
-    console.error("Error creating bar chart:", e);
+    console.error('Error membuat bar chart:', e);
   }
 }
 
