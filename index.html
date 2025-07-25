@@ -148,9 +148,10 @@
       margin-top: 15px;
     }
     
-    .charts canvas {
-      width: 100% !important;
-      height: auto !important;
+    .chart-container {
+      width: 100%;
+      height: 300px;
+      position: relative;
     }
     
     .fill-factor-grid {
@@ -343,8 +344,8 @@
         flex-direction: row;
       }
       
-      .charts canvas {
-        width: 48% !important;
+      .chart-container {
+        width: 48%;
       }
       
       #loginContainer {
@@ -501,8 +502,12 @@
   <div class="hasil" id="output"></div>
   <div class="resume" id="resume"></div>
   <div class="charts">
-    <canvas id="pieChart"></canvas>
-    <canvas id="barChart"></canvas>
+    <div class="chart-container">
+      <canvas id="pieChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="barChart"></canvas>
+    </div>
   </div>
 </div>
 
@@ -542,6 +547,7 @@ let stepElapsedTime = 0;
 let pauseStartTime = null;
 let totalPausedTime = 0;
 let editing = false;
+let pieChart, barChart;
 
 // Offline data management
 let offlineData = {
@@ -915,10 +921,14 @@ function resetSession() {
   document.getElementById('resume').innerHTML = '';
 
   // Reset grafik
-  const pieChartCanvas = document.getElementById("pieChart");
-  const barChartCanvas = document.getElementById("barChart");
-  if (pieChartCanvas && pieChartCanvas.chart) pieChartCanvas.chart.destroy();
-  if (barChartCanvas && barChartCanvas.chart) barChartCanvas.chart.destroy();
+  if (pieChart) {
+    pieChart.destroy();
+    pieChart = null;
+  }
+  if (barChart) {
+    barChart.destroy();
+    barChart = null;
+  }
 
   // Reset tombol mulai
   const btnStart = document.getElementById('btnStart');
@@ -933,7 +943,6 @@ function resetSession() {
   // Nonaktifkan export
   document.getElementById("btnExportPDF").disabled = true;
   document.getElementById("btnExportExcel").disabled = true;
-  document.getElementById("btnExportSheets").disabled = true;
   document.getElementById('btnBackToInput').disabled = true;
 
   // Nonaktifkan fill factor active
@@ -1115,8 +1124,7 @@ function hitungProduksi() {
 
   document.getElementById("btnExportPDF").disabled = false;
   document.getElementById("btnExportExcel").disabled = false;
-  document.getElementById("btnExportSheets").disabled = false;
-  
+    
   // Tampilkan resume langkah
   let resumeHTML = `
     <h3>Resume Pengoperasian:</h3>
